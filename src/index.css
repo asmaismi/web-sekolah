@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Merriweather:wght@700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Focus ring */
+:root { --ring: 0 0% 10%; }
+*:focus { outline: none; }
+.focus-ring:focus-visible { box-shadow: 0 0 0 3px hsl(var(--ring) / 0.35); }
