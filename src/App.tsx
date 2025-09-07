@@ -12,6 +12,7 @@ return (
     <Navbar />
     <main className="flex-1"><Outlet /></main>
 <Footer />
+  <ToastStack />
 </div>
 )
 }

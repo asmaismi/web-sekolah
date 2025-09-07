@@ -1,10 +1,68 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Merriweather:wght@700&display=swap');
+/* ==== Google Font (Manrope) ==== */
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300..800&display=swap");
+
+/* ==== Tailwind ==== */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ==== Base styles (global) ==== */
+@layer base {
+  /* Variabel font agar gampang ganti di kemudian hari */
+  :root {
+    --font-body:
+      "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+      "Segoe UI Emoji";
+    /* biarkan judul pakai font default yang sudah ada sekarang */
+    --font-display:
+      ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+      "Segoe UI Emoji";
+  }
 
-/* Focus ring */
-:root { --ring: 0 0% 10%; }
-*:focus { outline: none; }
-.focus-ring:focus-visible { box-shadow: 0 0 0 3px hsl(var(--ring) / 0.35); }
+  /* Terapkan font ke seluruh teks */
+  body {
+    font-family: var(--font-body);
+    @apply antialiased text-[15px] leading-relaxed text-slate-800;
+    /* kalau mau lebih compact:
+       @apply text-[15px] leading-[1.7];
+    */
+  }
+
+  /* Penting: biarkan heading tetap pakai font lama */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    font-family: var(--font-display);
+  }
+
+  /* Opsional: paragraf & small */
+  p {
+    @apply mb-4;
+  }
+  small {
+    @apply text-slate-500;
+  }
+}
+/* === Text wrap image for Welcome block === */
+.shape-rounded {
+  float: left; /* bikin teks mengalir di kanan */
+  width: 140px;
+  height: 140px;
+  margin: 0 1rem 0.5rem 0; /* jarak dari teks */
+  border-radius: 16px; /* rounded */
+  object-fit: cover; /* cover crop */
+  /* trik supaya shape mengikuti rounded corner (didukung browser modern) */
+  shape-outside: inset(0 round 16px);
+  clip-path: inset(0 round 16px);
+}
+
+@media (min-width: 768px) {
+  .shape-rounded {
+    width: 180px;
+    height: 180px;
+  }
+}

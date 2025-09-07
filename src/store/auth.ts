@@ -1,59 +1,63 @@
-import { create } from 'zustand'
-import { supabase } from '@/lib/supabase'
-import type { Session } from '@supabase/supabase-js'
+import { create } from "zustand";
+import { supabase } from "../lib/supabase";
 
-type Role = 'user' | 'admin'
-interface Profile { id: string; full_name: string | null; role: Role | null }
-interface AuthState {
-  session: Session | null
-  profile: Profile | null
-  loading: boolean
-  init: () => Promise<void>
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
-  logout: () => Promise<void>
-}
+type AuthUser = { id: string; email: string | null };
+export type AuthResult = { ok: boolean; error?: string };
+
+type AuthState = {
+  user: AuthUser | null;
+  status: "idle" | "ready";
+  init: () => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  logout: () => Promise<void>;
+};
 
 export const useAuth = create<AuthState>((set) => ({
-  session: null,
-  profile: null,
-  loading: false,
+  user: null,
+  status: "idle",
+
   async init() {
-    const { data } = await supabase.auth.getSession()
-    set({ session: data.session ?? null })
-    if (data.session) await fetchProfile(set)
-    supabase.auth.onAuthStateChange(async (_e, session) => {
-      set({ session: session ?? null })
-      if (session) await fetchProfile(set); else set({ profile: null })
-    })
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        set({
+          user: { id: session.user.id, email: session.user.email },
+          status: "ready",
+        });
+      } else {
+        set({ user: null, status: "ready" });
+      }
+      supabase.auth.onAuthStateChange((_event, session) => {
+        set({
+          user: session?.user
+            ? { id: session.user.id, email: session.user.email }
+            : null,
+        });
+      });
+    } catch {
+      set({ user: null, status: "ready" });
+    }
   },
+
   async login(email, password) {
-    set({ loading: true })
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    set({ loading: false })
-    return error ? { ok: false, error: error.message } : { ok: true }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) return { ok: false, error: error.message };
+    const u = data.user;
+    if (!u) return { ok: false, error: "User tidak ditemukan" };
+    set({ user: { id: u.id, email: u.email } });
+    return { ok: true };
   },
+
   async logout() {
-    await supabase.auth.signOut()
-    set({ session: null, profile: null })
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      set({ user: null });
+    }
   },
-}))
-
-async function fetchProfile(set: any) {
-  const { data: userData } = await supabase.auth.getUser()
-  const uid = userData.user?.id
-  if (!uid) { set({ profile: null }); return }
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, full_name, role')
-    .eq('id', uid)           // <= penting: hanya baris milik user
-    .maybeSingle()
-
-  if (error) {
-    console.error('fetchProfile error', error)
-    set({ profile: null })
-    return
-  }
-  set({ profile: (data as any) ?? null })
-}
-
+}));

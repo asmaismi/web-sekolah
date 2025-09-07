@@ -1,10 +1,31 @@
-import React from 'react'
-export default function Section({ title, subtitle, children }: { title: string; subtitle?: string; children?: React.ReactNode }) {
-return (
-<section className="py-12">
-<h2 className="text-2xl font-bold">{title}</h2>
-{subtitle && <p className="text-slate-600 mt-2">{subtitle}</p>}
-<div className="mt-6">{children}</div>
-</section>
-)
+import React from "react";
+
+type Props = {
+  title?: React.ReactNode; // ← opsional sekarang
+  subtitle?: string;
+  children?: React.ReactNode;
+  className?: string;
+};
+
+export default function Section({
+  title,
+  subtitle,
+  children,
+  className = "",
+}: Props) {
+  return (
+    <section className={"py-16 " + className}>
+      <div className="mx-auto max-w-7xl px-4">
+        {title && (
+          <>
+            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              {title}
+            </h2>
+            {subtitle && <p className="mt-2 text-slate-600">{subtitle}</p>}
+          </>
+        )}
+        <div className={title ? "mt-6" : ""}>{children}</div>
+      </div>
+    </section>
+  );
 }

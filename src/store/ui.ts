@@ -1,20 +1,24 @@
-import { create } from 'zustand'
+import { create } from "zustand";
 
+type Toast = { id: string; message: string };
 
-type Toast = { id: number; message: string }
-interface UIState {
-toasts: Toast[]
-push: (message: string) => void
-remove: (id: number) => void
-}
-let seq = 0
-export const useUI = create<UIState>((set) => ({
-toasts: [],
-push(message) {
-const id = ++seq
-set((s) => ({ toasts: [...s.toasts, { id, message }] }))
-// auto-hide
-setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3000)
-},
-remove(id) { set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })) },
-}))
+type UIState = {
+  toasts: Toast[];
+  add: (message: string) => string;
+  remove: (id: string) => void;
+};
+
+const useUI = create<UIState>((set, get) => ({
+  toasts: [],
+  add(message) {
+    const id = Math.random().toString(36).slice(2);
+    set({ toasts: [...get().toasts, { id, message }] });
+    return id;
+  },
+  remove(id) {
+    set({ toasts: get().toasts.filter((t) => t.id !== id) });
+  },
+}));
+
+export default useUI;
+export { useUI };
