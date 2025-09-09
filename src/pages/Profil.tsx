@@ -35,7 +35,7 @@ function ColorCard({
   title: string;
   children: React.ReactNode;
 }) {
-  const acc = ACCENTS[index % ACCENTS.length];
+  const acc = { ring: '', dot: '', title: '' };
   return (
     <div
       className={`rounded-2xl p-[1.5px] bg-gradient-to-br ${acc.ring} shadow-sm`}

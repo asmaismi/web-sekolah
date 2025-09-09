@@ -1,6 +1,6 @@
-import type { SiteSettings } from "@/store/settings";
+import type { SiteSettings, HomeLayoutKey } from "@/services/settings";
 
-export type WelcomeLayoutKey = "classic" | "headline";
+export type WelcomeLayoutKey = HomeLayoutKey;
 
 export type WelcomeLayoutProps = {
   s: SiteSettings | undefined;

@@ -1,46 +1,8 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
 
-export type SiteSettings = {
-  id: number;
-  site_name?: string | null;
-  tagline?: string | null;
-  logo_url?: string | null;
-  primary_color?: string | null;
-
-  contact_email?: string | null;
-  phone?: string | null;
-  address?: string | null;
-  facebook?: string | null;
-  instagram?: string | null;
-  youtube?: string | null;
-
-  profile_image_url?: string | null;
-  profile_text?: string | null;
-  vision?: string | null;
-  mission?: string | null;
-
-  hero_title?: string | null;
-  hero_subtitle?: string | null;
-  hero_btn_text?: string | null;
-  hero_btn_url?: string | null;
-  hero_btn2_text?: string | null;
-  hero_btn2_url?: string | null;
-  hero_media_url?: string | null;
-  hero_media_autoplay?: boolean | null;
-  hero_media_muted?: boolean | null;
-  hero_media_loop?: boolean | null;
-
-  home_show_welcome?: boolean | null;
-  home_welcome_title?: string | null;
-  home_welcome_body?: string | null;
-  home_welcome_image_url?: string | null;
-
-  home_show_gallery?: boolean | null;
-  home_gallery_limit?: number | null;
-  home_principal_name?: string | null;
-  home_layout?: string | null;
-};
+import type { SiteSettings as CoreSiteSettings } from "@/services/settings";
+export type SiteSettings = CoreSiteSettings & { id: number };
 
 type State = {
   data: SiteSettings | null;

@@ -14,12 +14,10 @@ import {
 } from "../../services/gallery";
 import AdminOnly from "../../components/admin/AdminOnly";
 
-type Form = {
-  title: string;
+type Form = { title: string;
   caption?: string;
   url?: string | null;
-  file?: File | null;
-};
+  file?: File | null; image_url: string | null };
 
 export default function GaleriForm() {
   const { id } = useParams();
@@ -30,6 +28,7 @@ export default function GaleriForm() {
     title: "",
     caption: "",
     url: null,
+    image_url: null,
     file: null,
   });
   const [loading, setLoading] = useState(false);
@@ -39,11 +38,12 @@ export default function GaleriForm() {
     if (!id) return;
     (async () => {
       try {
-        const row: GalleryItem = await getGalleryById(id);
+        const row = await getGalleryById(id);
+        if (!row) return;
         setData({
           title: row.title ?? "",
           caption: row.caption ?? "",
-          url: row.url ?? null,
+          image_url: (row as any).image_url ?? null,
           file: null,
         });
         setDirty(false);
@@ -77,13 +77,10 @@ export default function GaleriForm() {
           return;
         }
       }
-      const payload = {
-        title: data.title.trim(),
-        caption: data.caption?.trim() || "",
-        url: url!,
-      };
+      const payload = { title: data.title.trim(), caption: data.caption?.trim() || "", image_url: url!,
+       };
       if (!payload.title) throw new Error("Judul wajib diisi");
-      if (!payload.url) throw new Error("Gambar wajib diupload");
+      if (!payload.image_url) throw new Error("Gambar wajib diupload");
 
       if (id) {
         await updateGallery(id, payload);

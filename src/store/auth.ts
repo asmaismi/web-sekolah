@@ -23,7 +23,7 @@ export const useAuth = create<AuthState>((set) => ({
       } = await supabase.auth.getSession();
       if (session?.user) {
         set({
-          user: { id: session.user.id, email: session.user.email },
+          user: { id: session.user.id, email: session.user.email ?? null },
           status: "ready",
         });
       } else {
@@ -31,9 +31,7 @@ export const useAuth = create<AuthState>((set) => ({
       }
       supabase.auth.onAuthStateChange((_event, session) => {
         set({
-          user: session?.user
-            ? { id: session.user.id, email: session.user.email }
-            : null,
+          user: (session && session.user) ? { id: session.user.id, email: session.user.email ?? null } : null,
         });
       });
     } catch {
@@ -49,7 +47,7 @@ export const useAuth = create<AuthState>((set) => ({
     if (error) return { ok: false, error: error.message };
     const u = data.user;
     if (!u) return { ok: false, error: "User tidak ditemukan" };
-    set({ user: { id: u.id, email: u.email } });
+    set({ user: { id: u.id, email: u.email ?? null } });
     return { ok: true };
   },
 

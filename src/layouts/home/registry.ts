@@ -13,3 +13,7 @@ export const WELCOME_LAYOUTS: Record<WelcomeLayoutKey, LayoutFn> = {
 };
 
 export const DEFAULT_WELCOME_LAYOUT: WelcomeLayoutKey = "classic";
+
+export function getWelcomeLayout(k: WelcomeLayoutKey) {
+  return WELCOME_LAYOUTS[k] ?? WELCOME_LAYOUTS[DEFAULT_WELCOME_LAYOUT];
+}

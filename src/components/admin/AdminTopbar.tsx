@@ -53,13 +53,16 @@ export default function AdminTopbar({ title }: Props) {
         href = `/admin/${pathUpToHere}`;
       }
 
-      parts.push({ label, href, isId });
+      const item: { label: string; href?: string; isId?: boolean } = { label };
+      if (href) item.href = href;
+      if (isId) item.isId = true;
+      parts.push(item);
     });
     return parts;
   }, [pathname]);
 
   const computedTitle =
-    title || (crumbs.length ? crumbs[crumbs.length - 1].label : "Panel Admin");
+    title || (crumbs.length > 0 ? crumbs[crumbs.length - 1]!.label : "Panel Admin");
 
   return (
     <div className="sticky top-0 z-30 border-b bg-white/80 backdrop-blur">

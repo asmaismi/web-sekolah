@@ -155,12 +155,12 @@ export default function Footer() {
               <Row
                 icon={<Mail size={14} />}
                 text={email}
-                href={email ? `mailto:${email}` : undefined}
+                {...(email ? { href: `mailto:` + email } : {})}
               />
               <Row
                 icon={<Phone size={14} />}
                 text={phone}
-                href={phone ? `tel:${phone.replace(/\s+/g, "")}` : undefined}
+                {...(phone ? { href: `tel:` + phone.replace(/\s+/g, "") } : {})}
               />
               <Row icon={<MapPin size={14} />} text={address} />
             </div>

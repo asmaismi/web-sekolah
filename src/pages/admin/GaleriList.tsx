@@ -24,7 +24,7 @@ export default function GaleriList() {
   async function load() {
     setLoading(true);
     try {
-      const rows = await listGallery({ q });
+      const rows = await listGallery();
       setItems(rows);
     } catch (e: any) {
       addToast(e?.message || "Gagal memuat");
@@ -73,14 +73,14 @@ export default function GaleriList() {
                 className="border rounded-xl overflow-hidden bg-white"
               >
                 <img
-                  src={it.url}
-                  alt={it.title}
+                  src={(it as any).image_url}
+                  alt={it.title || undefined}
                   className="h-40 w-full object-cover"
                 />
                 <div className="p-3">
                   <div className="font-medium text-sm">{it.title}</div>
                   <div className="text-xs text-slate-500 truncate">
-                    {new Date(it.created_at).toLocaleString()}
+                    {it.created_at ? new Date(it.created_at as any).toLocaleString() : ""}
                   </div>
                   <div className="flex gap-2 mt-2">
                     <Link to={`/admin/galeri/${it.id}/edit`}>

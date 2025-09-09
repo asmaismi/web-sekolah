@@ -1,16 +1,16 @@
-import { useEffect, useState, type FormEvent } from "react";
-import Section from "@/components/common/Section";
-import Label from "@/components/ui/Label";
-import Input from "@/components/ui/Input";
-import Textarea from "@/components/ui/Textarea";
-import Button from "@/components/ui/Button";
 import AdminOnly from "@/components/admin/AdminOnly";
-import useUI from "@/store/ui";
+import Section from "@/components/common/Section";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import Label from "@/components/ui/Label";
+import Textarea from "@/components/ui/Textarea";
 import {
   getSettings,
   updateSettings,
   type SiteSettings,
 } from "@/services/settings";
+import useUI from "@/store/ui";
+import { useEffect, useState, type FormEvent } from "react";
 
 function getEmbedSrc(
   url: string,
@@ -29,14 +29,13 @@ function getEmbedSrc(
   if (yt) {
     const id = yt[1] || yt[2];
     const base = `https://www.youtube.com/embed/${id}`;
-    const q = new URLSearchParams({
-      rel: "0",
-      modestbranding: "1",
-      autoplay: a ? "1" : "0",
-      mute: m ? "1" : "0",
-      loop: l ? "1" : "0",
-      playlist: id, // perlu untuk loop
-    });
+    const q = new URLSearchParams();
+    q.set("rel", "0");
+    q.set("modestbranding", "1");
+    q.set("autoplay", "1");
+    q.set("mute", "1");
+    q.set("loop", "1");
+    if (id) q.set("playlist", id);
     return `${base}?${q.toString()}`;
   }
 
@@ -45,14 +44,13 @@ function getEmbedSrc(
   if (vm) {
     const id = vm[1];
     const base = `https://player.vimeo.com/video/${id}`;
-    const q = new URLSearchParams({
-      autoplay: a ? "1" : "0",
-      muted: m ? "1" : "0",
-      loop: l ? "1" : "0",
-      title: "0",
-      byline: "0",
-      portrait: "0",
-    });
+    const q = new URLSearchParams();
+    q.set("rel", "0");
+    q.set("modestbranding", "1");
+    q.set("autoplay", a ? "1" : "0");
+    q.set("mute", m ? "1" : "0");
+    q.set("loop", l ? "1" : "0");
+    if (id) q.set("playlist", id);
     return `${base}?${q.toString()}`;
   }
 
@@ -115,6 +113,14 @@ export default function HeroSettings() {
         <form onSubmit={onSubmit} className="grid md:grid-cols-2 gap-6">
           {/* Kolom kiri */}
           <div className="space-y-4 bg-white border rounded-xl p-4">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={!!f.home_show_hero}
+                onChange={(e) => setF((v) => ({ ...v, home_show_hero: e.target.checked }))}
+              />
+              Tampilkan Hero di Beranda
+            </label>
             <div>
               <Label>Judul</Label>
               <Input
@@ -177,6 +183,14 @@ export default function HeroSettings() {
 
           {/* Kolom kanan */}
           <div className="space-y-4 bg-white border rounded-xl p-4">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={!!f.home_show_hero}
+                onChange={(e) => setF((v) => ({ ...v, home_show_hero: e.target.checked }))}
+              />
+              Tampilkan Hero di Beranda
+            </label>
             <div>
               <Label>URL Video (YouTube/Vimeo/iframe)</Label>
               <Input

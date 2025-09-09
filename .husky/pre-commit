@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm typecheck && pnpm lint
+elif command -v yarn >/dev/null 2>&1; then
+  yarn typecheck && yarn lint
+else
+  npm run typecheck && npm run lint
+fi

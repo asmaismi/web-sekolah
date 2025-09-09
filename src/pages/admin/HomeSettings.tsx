@@ -1,316 +1,125 @@
-import { useEffect, useRef, useState, FormEvent } from "react";
+// src/pages/admin/HomeSettings.tsx — refactor ringkas
 import AdminOnly from "@/components/admin/AdminOnly";
-import Section from "@/components/common/Section";
-import Label from "@/components/ui/Label";
-import Input from "@/components/ui/Input";
-import Textarea from "@/components/ui/Textarea";
 import Button from "@/components/ui/Button";
 import useUI from "@/store/ui";
+import { useEffect, useState } from "react";
 
-import {
-  getSettings,
-  updateSettings,
-  type SiteSettings,
-} from "@/services/settings";
+import { getSettings, updateSettings, type HomeTemplateKey } from "@/services/settings";
+import { useSettings, type SiteSettings } from "@/store/settings";
 
-import { supabase } from "@/lib/supabase";
-import { Image as ImageIcon, Trash2, UploadCloud } from "lucide-react";
-import { useSettings } from "@/store/settings";
+// Bagian-bagian halaman dipisah sebagai komponen kecil
+import GalleryCard from "@/pages/admin/homeparts/GalleryCard";
+import LayoutPicker from "@/pages/admin/homeparts/LayoutPicker";
+import TeacherLoginCardControl from "@/pages/admin/homeparts/TeacherLoginCardControl";
+import TemplatePicker from "@/pages/admin/homeparts/TemplatePicker";
+import WelcomeCard from "@/pages/admin/homeparts/WelcomeCard";
+import WhyUsControl from "@/pages/admin/homeparts/WhyUsControl";
 
-const BUCKET = "images"; // ganti jika bucket storage-mu bernama lain
+/** Helper: patch state global secara aman */
+function patchSettings(fields: Partial<SiteSettings>) {
+  const prev = useSettings.getState().data || ({ id: 1 } as SiteSettings);
+  useSettings.setState({ data: { ...prev, ...fields } as SiteSettings } as any);
+}
 
 export default function HomeSettings() {
-  const toast = useUI((s) => s.add);
+  const notify = useUI((s) => s.add);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [saving, setSaving] = useState(false);
 
+  // State form lokal — hanya sebagian field yang dipakai halaman ini
   const [f, setF] = useState<Partial<SiteSettings>>({});
-  const refreshSettings = useSettings((s) => s.refresh);
 
+  // Load awal
   useEffect(() => {
-    let alive = true;
     (async () => {
+      setLoading(true);
       try {
-        const data = await getSettings();
-        if (!alive) return;
-        setF({ home_layout: data.home_layout ?? "classic", ...data });
+        const data = (await getSettings()) as Partial<SiteSettings>;
+        setF(data);
+        patchSettings(data);
       } catch (e: any) {
-        toast(e?.message || "Gagal memuat");
+        notify(e?.message || "Gagal memuat");
+      } finally {
+        setLoading(false);
       }
     })();
-    return () => {
-      alive = false;
-    };
-  }, [toast]);
+  }, []);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+  async function saveAll() {
+    setSaving(true);
     try {
-      await updateSettings({
-        home_show_welcome: !!f.home_show_welcome,
-        home_welcome_title: f.home_welcome_title ?? null,
-        home_welcome_body: f.home_welcome_body ?? null,
-        home_welcome_image_url: f.home_welcome_image_url ?? null,
-        home_principal_name: f.home_principal_name ?? null,
-        home_show_gallery: !!f.home_show_gallery,
-        home_gallery_limit: Number(f.home_gallery_limit || 8),
-        home_layout: (f.home_layout as string) ?? "classic",
-      });
-
-      // refresh store supaya Home langsung baca versi terbaru
-      await refreshSettings();
-      toast("Homepage disimpan");
+      await updateSettings(f);
+      patchSettings(f);
+      notify("Homepage disimpan");
     } catch (e: any) {
-      toast(e?.message || "Gagal menyimpan");
+      notify(e?.message || "Gagal menyimpan");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
 
-  async function uploadImage(file: File) {
-    if (!file.type.startsWith("image/")) {
-      toast("File bukan gambar");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast("Ukuran maks 2MB");
-      return;
-    }
-
-    setUploading(true);
+  // Aksi cepat tingkat halaman (jika butuh)
+  async function activateTemplate(key: HomeTemplateKey) {
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `settings/headmaster-${Date.now()}.${ext}`;
-
-      const { error } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, { upsert: true, contentType: file.type });
-      if (error) throw error;
-
-      const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      const url = pub?.publicUrl;
-      if (!url) throw new Error("Gagal mendapatkan public URL");
-
-      setF((v) => ({ ...v, home_welcome_image_url: url }));
-      toast("Foto berhasil diunggah. Jangan lupa klik Simpan.");
+      await updateSettings({ home_template: key });
+      setF((v) => ({ ...v, home_template: key }));
+      patchSettings({ home_template: key });
+      notify("Template beranda diaktifkan");
     } catch (e: any) {
-      toast(e?.message || "Upload gagal");
-    } finally {
-      setUploading(false);
+      notify(e?.message || "Gagal mengaktifkan template");
     }
   }
 
-  function onPickFile() {
-    fileRef.current?.click();
-  }
-
-  function onRemoveImage() {
-    setF((v) => ({ ...v, home_welcome_image_url: null as any }));
+  async function toggleTeacherLogin(val: boolean) {
+    try {
+      await updateSettings({ home_show_teacher_login: val });
+      setF((v) => ({ ...v, home_show_teacher_login: val }));
+      patchSettings({ home_show_teacher_login: val });
+      notify(val ? "Form Login Guru diaktifkan" : "Form Login Guru disembunyikan");
+    } catch (e: any) {
+      notify(e?.message || "Gagal menyimpan");
+    }
   }
 
   return (
     <AdminOnly>
-      <Section
-        title="Homepage"
-        subtitle="Kontrol konten yang ditampilkan di halaman depan."
-      >
-        <form onSubmit={onSubmit} className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-2 bg-white border rounded-xl p-4">
-            <div className="font-semibold">Layout Beranda</div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {[
-                { key: "classic", label: "Klasik (Foto kiri)" },
-                { key: "headline", label: "Headline (Foto atas)" },
-              ].map((opt) => (
-                <label
-                  key={opt.key}
-                  className={`cursor-pointer rounded-xl border p-3 flex items-center gap-3 ${
-                    f.home_layout === opt.key
-                      ? "ring-2 ring-primary-500 border-primary-200"
-                      : ""
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="home_layout"
-                    className="mr-2"
-                    checked={f.home_layout === opt.key}
-                    onChange={() =>
-                      setF((v) => ({ ...v, home_layout: opt.key as any }))
-                    }
-                  />
-                  <div>
-                    <div className="font-medium">{opt.label}</div>
-                    <div className="text-xs text-slate-500">
-                      Klik untuk memilih
-                    </div>
-                  </div>
-                </label>
-              ))}
-            </div>
+      <div className="mx-auto max-w-5xl p-4 md:p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold">Pengaturan Beranda</h1>
+            <p className="text-sm text-slate-600">Pilih template, layout, dan isi beranda sekolah.</p>
           </div>
-          {/* SAMBUTAN / WELCOME */}
-          <div className="space-y-4 bg-white border rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div className="font-semibold">Sambutan Kepala Sekolah</div>
-              <label className="inline-flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={!!f.home_show_welcome}
-                  onChange={(e) =>
-                    setF((v) => ({ ...v, home_show_welcome: e.target.checked }))
-                  }
-                />
-                Tampilkan
-              </label>
-            </div>
-
-            <div>
-              <Label>Judul</Label>
-              <Input
-                value={f.home_welcome_title || ""}
-                onChange={(e) =>
-                  setF((v) => ({ ...v, home_welcome_title: e.target.value }))
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Isi / Sambutan</Label>
-              <Textarea
-                rows={6}
-                value={f.home_welcome_body || ""}
-                onChange={(e) =>
-                  setF((v) => ({ ...v, home_welcome_body: e.target.value }))
-                }
-              />
-            </div>
-
-            {/* FOTO KEPSEK */}
-            <div>
-              <Label>Foto Kepala Sekolah</Label>
-              <div className="flex items-center gap-4">
-                {f.home_welcome_image_url ? (
-                  <img
-                    src={f.home_welcome_image_url}
-                    alt="Kepala Sekolah"
-                    className="h-20 w-20 rounded-xl object-cover border"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="h-20 w-20 rounded-xl border grid place-items-center text-slate-400">
-                    <ImageIcon className="h-5 w-5" />
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={onPickFile}
-                    disabled={uploading}
-                  >
-                    <UploadCloud className="h-4 w-4 mr-2" />
-                    {uploading ? "Mengunggah…" : "Upload / Ganti"}
-                  </Button>
-
-                  {f.home_welcome_image_url ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={onRemoveImage}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" /> Hapus
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const input = e.target as HTMLInputElement; // cast aman
-                  const file = input.files?.[0];
-                  if (file) uploadImage(file);
-                  input.value = ""; // reset agar bisa upload file yang sama lagi
-                }}
-              />
-              <p className="mt-1 text-xs text-slate-500">
-                PNG/JPG, maks 2MB. Setelah upload, klik <b>Simpan</b>.
-              </p>
-            </div>
-            <div className="mt-4">
-              <Label>Nama Kepala Sekolah</Label>
-              <Input
-                placeholder="Misal: Ahmad Sudirman, S.Pd."
-                value={(f.home_principal_name as string) || ""}
-                onChange={(e) =>
-                  setF((v) => ({ ...v, home_principal_name: e.target.value }))
-                }
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                Opsional. Jika diisi, akan ditampilkan sebagai tanda tangan di
-                bawah sambutan.
-              </p>
-            </div>
-            <div className="pt-2">
-              <Button type="submit" disabled={loading || uploading}>
-                {loading ? "Menyimpan…" : "Simpan"}
-              </Button>
-            </div>
+          <div className="flex items-center gap-2">
+            <Button onClick={saveAll} disabled={loading || saving}>
+              {saving ? "Menyimpan…" : "Simpan Semua"}
+            </Button>
           </div>
+        </div>
 
-          {/* GALERI BERANDA */}
-          <div className="space-y-4 bg-white border rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div className="font-semibold">Galeri di Beranda</div>
-              <label className="inline-flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={!!f.home_show_gallery}
-                  onChange={(e) =>
-                    setF((v) => ({ ...v, home_show_gallery: e.target.checked }))
-                  }
-                />
-                Tampilkan
-              </label>
-            </div>
+        {/* Template */}
+        <TemplatePicker f={f} setF={setF} />
 
-            <div>
-              <Label>Jumlah foto ditampilkan</Label>
-              <Input
-                type="number"
-                min={3}
-                max={24}
-                value={(f.home_gallery_limit ?? 8).toString()}
-                onChange={(e) =>
-                  setF((v) => ({
-                    ...v,
-                    home_gallery_limit: Number(e.target.value),
-                  }))
-                }
-              />
-            </div>
+        {/* Layout */}
+        <LayoutPicker f={f} setF={setF} />
 
-            <p className="text-sm text-slate-600">
-              Foto yang tampil adalah item <b>Galeri</b> dengan status{" "}
-              <i>Published</i>. Atur publish/unpublish di menu “Galeri →
-              Publish”.
-            </p>
+        {/* Sambutan & Foto Kepala Sekolah (URL + teks) */}
+        <WelcomeCard f={f} setF={setF} />
+        
+        {/* Why Us */}
+        <WhyUsControl f={f} setF={setF} />
 
-            <div className="pt-2">
-              <Button type="submit" disabled={loading || uploading}>
-                {loading ? "Menyimpan…" : "Simpan"}
-              </Button>
-            </div>
-          </div>
-        </form>
-      </Section>
+        {/* Galeri */}
+        <GalleryCard f={f} setF={setF} />
+
+        {/* Login Guru */}
+        <TeacherLoginCardControl f={f} setF={setF} />
+
+        {/* Aksi cepat (opsional) */}
+        <div className="hidden">{/* contoh pemakaian */}
+          <button onClick={() => activateTemplate((f.home_template as HomeTemplateKey) || "universitas")}>Aktifkan Template</button>
+          <button onClick={() => toggleTeacherLogin(!f.home_show_teacher_login)}>Toggle Login Guru</button>
+        </div>
+      </div>
     </AdminOnly>
   );
 }
